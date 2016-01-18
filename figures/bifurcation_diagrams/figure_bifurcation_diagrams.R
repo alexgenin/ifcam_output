@@ -15,14 +15,16 @@ library(grid)
 library(gridExtra) # for grid.arrange
 
 # Define output path 
-# NB: folders must have trailing /
+# /!\ NB: folders must have a trailing /
 working_directory  <- '/home/alex/work/2014-2015/SpatialStress/ifcam_output/figures/'
 output_figure_path <- "/home/alex/work/2014-2015/SpatialStress/ifcam_output/figures/bifurcation_diagrams" # same folder
 
 # Define data paths 
-# NB: folders must have trailing /
-# data_folder <- "http://alex.lecairn.org/files/" 
+# /!\ NB: folders must have a trailing /
 data_folder <- '/home/alex/work/2014-2015/SpatialStress/ifcam_output/data/'
+# Use this folder if you do not have the results on your computer: it will fetch
+#   the latest ones from github.
+# data_folder <- "https://github.com/alexgenin/ifcam_output/blob/master/data/" 
 files <- list(musselbed = paste0(data_folder, "result_musselbed_processed.rda"),
               grazing   = paste0(data_folder, "result_grazing_processed.rda"),
               forestgap = paste0(data_folder, "result_forestgap_processed.rda"))
