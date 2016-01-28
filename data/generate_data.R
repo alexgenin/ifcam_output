@@ -29,23 +29,21 @@ LENGTH.STAT <- 200 # Number of time steps to consider when computing mean covers
 TMIN <- 500
 TMAX <- 3000
 
-# Computation variables
+# Computation-related variables
 PARALLEL <- TRUE
 NCORES   <- 23
 
 # TODO: 
-#   - add time series 
+#   - add time series (done)
 #   - set t_min to 500 (done)
 #   - set t_max to 3000 (done)
 #   - forestgap: d btw 0 and 0.25, delta between 0a nd 0.25 (done)
-#     * NOTE: no, I put delta to 0.35 as it makes more sense
+#     * NOTE: no, I put delta to 0.35 as it allows showing the whole 
+#         trends. 
 #   - musselbed: removed the value \delta = 0 from plots (nothing to do here)
 #   - decide on whether to use b or m in the grazing model
 #   - musselbed: 0 to 0.3 (done)
 #   - musselbed: catastrophic shifts along the b parameter ? 
-#   - predprey: problem with oscillations: 
-#       - take more snapshots ? 
-#       - more time steps ?
 #   - grazing: use g and m (done but make a quick simulation before to 
 #       check for parameter ranges)
 # 
@@ -119,6 +117,7 @@ if (REDO_COMPUTATIONS) {
   
   rm(result_forestgap_lower)
   rm(result_forestgap_upper)
+  
   
   # Musselbed model -------------
   parms <- list(r     = 0.4,
