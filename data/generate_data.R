@@ -20,11 +20,13 @@ library(doParallel)
 
 
 # Global variables
-SIZE   <- 100
-RES    <- 51 # Number of points on each dimension
-NSNAPS <- 10
-REDO_COMPUTATIONS <- TRUE
-DO_PREDPREY <- FALSE
+SIZE_PD    <- 100 # Size of lattice for 2D plane diagram
+SIZE_CS <- 400 # Size of lattice for cross-sections
+RES     <- 51 # Number of points on each dimension
+RES_CS  <- 101 # Number of points on each dimension
+NSNAPS <- 10 # Number of snapshots to save at the end of simulation
+REDO_COMPUTATIONS_PD <- FALSE # Redo computations for phase diagrams
+REDO_COMPUTATIONS_CS <- TRUE # Redo computations for cross-sections
 LENGTH.STAT <- 200 # Number of time steps to consider when computing mean covers
 TMIN <- 500
 TMAX <- 3000
@@ -59,7 +61,7 @@ if (PARALLEL) {
 
 # Produce data needed for the 2D state diagram
 # --------------------------------------------------------
-if (REDO_COMPUTATIONS) {
+if (REDO_COMPUTATIONS_PD) {
   
   # Grazing model -------------
   parms <- list(del = 0.9,
@@ -74,14 +76,14 @@ if (REDO_COMPUTATIONS) {
   
   result_grazing_upper <- ca_arraySS(grazing, 
                                      init = c(.99, .01, 0), 
-                                     width = SIZE, height = SIZE, 
+                                     width = SIZE_PD, height = SIZE_PD, 
                                      parms = parms, nsnaps = NSNAPS,
                                      length.stat = LENGTH.STAT,
                                      t_min = TMIN, t_max = TMAX)
   
   result_grazing_lower <- ca_arraySS(grazing, 
                                      init = c(.05, .95, 0), 
-                                     width = SIZE, height = SIZE, 
+                                     width = SIZE_PD, height = SIZE_PD, 
                                      parms = parms, nsnaps = NSNAPS,
                                      length.stat = LENGTH.STAT,
                                      t_min = 500, t_max = 3000,
@@ -100,14 +102,14 @@ if (REDO_COMPUTATIONS) {
   
   result_forestgap_upper <- ca_arraySS(forestgap, 
                                        init = c(.95, .05), 
-                                       width = SIZE, height = SIZE, 
+                                       width = SIZE_PD, height = SIZE_PD, 
                                        parms = parms, nsnaps = NSNAPS,
                                        length.stat = LENGTH.STAT,
                                        t_min = TMIN, t_max = TMAX)
   
   result_forestgap_lower <- ca_arraySS(forestgap, 
                                        init = c(.05, .95), 
-                                       width = SIZE, height = SIZE, 
+                                       width = SIZE_PD, height = SIZE_PD, 
                                        parms = parms, nsnaps = NSNAPS,
                                        length.stat = LENGTH.STAT,
                                        t_min = TMIN, t_max = TMAX)
@@ -126,14 +128,14 @@ if (REDO_COMPUTATIONS) {
   
   result_musselbed_upper <- ca_arraySS(musselbed, 
                                        init = c(.99, .01, 0), 
-                                       width = SIZE, height = SIZE, 
+                                       width = SIZE_PD, height = SIZE_PD, 
                                        parms = parms, nsnaps = NSNAPS,
                                        length.stat = LENGTH.STAT,
                                        t_min = TMIN, t_max = TMAX)
   
   result_musselbed_lower <- ca_arraySS(musselbed, 
                                        init = c(.05, .95, 0), 
-                                       width = SIZE, height = SIZE, 
+                                       width = SIZE_PD, height = SIZE_PD, 
                                        parms = parms, nsnaps = NSNAPS,
                                        length.stat = LENGTH.STAT,
                                        t_min = TMIN, t_max = TMAX)
@@ -144,67 +146,14 @@ if (REDO_COMPUTATIONS) {
   rm(result_musselbed_lower)
   rm(result_musselbed_upper)
   
-  
-  # Pred-prey model --------------
-  if ( DO_PREDPREY ) { 
-    # NOTE: subs is disabled (forced to one) for now in the predator-prey 
-    #   model !!!
-    # 
-    # NOTE: due to oscillations and "slow" behavior we increase t_min, t_max and
-    #   length.stat so stochasticity does not affect so much the final mean covers.
-    # 
-    # NOTE: we can't have low predator and high prey so the upper branch is 
-    #   necessarily high prey *no* predator, lower branch could be coexistence
-    #  - threes domains: 
-    #    - coexistence
-    #    - extinction of predators (=> full prey)
-    #    - coextinction
-    #  - we're interested in the transition coexistence -> coextinction
-    # 
-    #  - We need an idea of the stability landscape: 
-    #     - start from upper branch (prey at eq level without predator) and 
-    #         add predators: how much do you need to actually go into coexistence
-    #         regime given a set of parameters ? 
-    #     - implementation: run from full prey to eq, then introduce predators
-    #  - As soon as predator survives you get oscillations (=> Hopf bifurcation ?)
-    #  - 50% and 5% (for pred&prey)
-    #  - Mean cover over 1000 time steps
-    #  - Decide on a cutoff to decide where the critical point is
-    #  - Instead of a 2D diagram :
-    #      - plot only a few bifurcation diagrams
-    #        - Hopf along \delta axis (?): delta= 0.01, betaf = 1/3, betas = .2, m = 0.1
-    #        - Still to be found along m axis
-    #  - Time-series needed for indicators :
-    #   - maybe focus on spectrum rather than var/skew indics ?
-    parms <- list(betaf = 1/3,
-                  betas = seq(0, .5, length.out = RES),
-                  delta = 0.01, # .01 to .02
-                  m     = seq(0, .2, length.out = RES))
-    
-    result_predprey_lower <- ca_arraySS(predprey, 
-                                        init  = c(.05, .25, .70), 
-                                        width = SIZE, height = SIZE, 
-                                        parms = parms, nsnaps = NSNAPS, 
-                                        length.stat = LENGTH.STAT * 5, 
-                                        t_min = 500, 
-                                        t_max = 2000)
-    
-    result_predprey_upper <- ca_arraySS(predprey, 
-                                        init  = c(.75, .25, 0), 
-                                        width = SIZE, height = SIZE, 
-                                        parms = parms, nsnaps = NSNAPS, 
-                                        length.stat = LENGTH.STAT * 5, 
-                                        t_min = 500, 
-                                        t_max = 2000)
-    
-    save(result_predprey_lower, result_predprey_upper, 
-         file = "./result_predprey.rda", compress = 'bzip2')
-    rm(result_predprey_lower)
-    rm(result_predprey_lower)
-    
-  }
-  
-  
   # Save results --------------
   
 } 
+
+# Produce data needed for cross-sections
+# --------------------------------------------------------
+if (REDO_COMPUTATIONS_CS) { 
+  
+  
+  
+}
