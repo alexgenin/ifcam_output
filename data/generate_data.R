@@ -18,18 +18,17 @@ library(caspr)
 library(ggplot2)
 library(doParallel)
 
-
 # Global variables
 SIZE_PD    <- 100 # Size of lattice for 2D plane diagram
-SIZE_CS <- 400 # Size of lattice for cross-sections
-RES     <- 51 # Number of points on each dimension
-RES_CS  <- 101 # Number of points on each dimension
-NSNAPS <- 10 # Number of snapshots to save at the end of simulation
+SIZE_CS <- 400    # Size of lattice for cross-sections
+RES     <- 51     # Number of points on each dimension
+RES_CS  <- 201    # Number of points on each dimension
+NSNAPS <- 10      # Number of snapshots to save at the end of simulation
 REDO_COMPUTATIONS_PD <- FALSE # Redo computations for phase diagrams
 REDO_COMPUTATIONS_CS <- TRUE # Redo computations for cross-sections
 LENGTH.STAT <- 200 # Number of time steps to consider when computing mean covers
-TMIN <- 500
-TMAX <- 3000
+TMIN <- 500  # Minimum simulation time
+TMAX <- 3000 # Maximum simulation time (in case no eq is found)
 
 # Computation-related variables
 PARALLEL <- TRUE
@@ -43,11 +42,9 @@ NCORES   <- 23
 #     * NOTE: no, I put delta to 0.35 as it allows showing the whole 
 #         trends. 
 #   - musselbed: removed the value \delta = 0 from plots (nothing to do here)
-#   - decide on whether to use b or m in the grazing model
 #   - musselbed: 0 to 0.3 (done)
-#   - musselbed: catastrophic shifts along the b parameter ? 
-#   - grazing: use g and m (done but make a quick simulation before to 
-#       check for parameter ranges)
+#   - musselbed: catastrophic shifts along the b parameter ? (nope)
+#   - grazing: use g and m (done)
 # 
 
 # Register parallel backend
@@ -62,6 +59,7 @@ if (PARALLEL) {
 # Produce data needed for the 2D state diagram
 # --------------------------------------------------------
 if (REDO_COMPUTATIONS_PD) {
+  
   
   # Grazing model -------------
   parms <- list(del = 0.9,
@@ -145,9 +143,7 @@ if (REDO_COMPUTATIONS_PD) {
   
   rm(result_musselbed_lower)
   rm(result_musselbed_upper)
-  
-  # Save results --------------
-  
+    
 } 
 
 # Produce data needed for cross-sections
@@ -156,4 +152,7 @@ if (REDO_COMPUTATIONS_CS) {
   
   
   
+  
 }
+
+
