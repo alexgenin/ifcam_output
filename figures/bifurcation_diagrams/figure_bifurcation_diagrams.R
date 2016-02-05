@@ -17,7 +17,7 @@ library(gridExtra) # for grid.arrange
 # Define output path 
 # /!\ NB: folders must have a trailing /
 working_directory  <- '/home/alex/work/2014-2015/SpatialStress/ifcam_output/figures/'
-output_figure_path <- "/home/alex/work/2014-2015/SpatialStress/ifcam_output/figures/bifurcation_diagrams" # same folder
+output_figure_path <- "/home/alex/work/2014-2015/SpatialStress/ifcam_output/figures/bifurcation_diagrams/" # same folder
 
 # Define data paths 
 # /!\ NB: folders must have a trailing /
@@ -36,6 +36,7 @@ files <- list(musselbed = paste0(data_folder, "result_musselbed_processed.rda"),
 
 # Load data from a file in a remote url or a local file appropriately
 load_url <- function(url, cleanup = FALSE, ...) { 
+  # Test whether the user gave a url
   if ( grepl('^http://.*$', url) ) { 
     file <- tempfile()
     download.file(url, destfile = file)
@@ -52,7 +53,7 @@ merge_branches <- function(upper, lower) {
              rbind(upper, lower))
 }
 
-# Get closest to a value in a vector~alex/work/2014-2015/SpatialStress/manuscript/figures
+# Get the closest value in a vector
 closest_to <- function(val, X, quiet = FALSE) { 
   index <- which( abs(val - X) == min(abs(val - X)) )
   new_value <- X[min(index)]
@@ -62,21 +63,35 @@ closest_to <- function(val, X, quiet = FALSE) {
   return(new_value)
 }
 
-# Some ggplot constructs to set graph attributes
-cross_sections_theme_adjust <- 
-  theme(plot.title = element_text(size = 14, hjust = 0, vjust = 0.5), 
-        legend.position = c(1,1),
-        legend.direction = 'horizontal', 
-        legend.justification = c(1, 1), 
-        legend.title = element_blank())
 
 no_legend <- theme(legend.position = "none")
 
+# Function that produces a ggplot object representing the cross section
+#   It requires ggplot2 > 2.0
+do_cs_plot <- function(data, x, y, ytitle, main_title) { 
+  
+  ggplot(data) + 
+    geom_line(aes_(x = substitute(x), y = substitute(y), 
+                   group = ~branch, linetype = ~branch)) + 
+    xlab(substitute(x)) + 
+    ylab(ytitle) + 
+    ggtitle(main_title) + 
+    theme(plot.title = element_text(size = 14, hjust = 0, vjust = 0.5), 
+          legend.position = c(1,1),
+          legend.direction = 'horizontal', 
+          legend.justification = c(1, 1), 
+          legend.title = element_blank())
+}
 
-
+# Merge the plots in a three panes layout
+merge_plots <- function(phasediag, cs_high, cs_mid, cs_low) { 
+  grid.arrange(phasediag, 
+               cs_high, cs_mid, cs_low, 
+               ncol = 1, 
+               heights = c(.5, .5/3, .5/3, .5/3))
+}
 
 # Values common for all models 
-
 setwd(working_directory)
 
 # Graphic output 
@@ -100,15 +115,15 @@ rm(upper_branch, lower_branch)
 
 # Values for individual cross_sections
 cross_section_high <- closest_to(0.60, dat.mussel[ ,'d'])
-cross_section_low  <- closest_to(0.10, dat.mussel[ ,'d'])
-
+cross_section_mid  <- closest_to(0.24, dat.mussel[ ,'d'])
+cross_section_low  <- closest_to(0, dat.mussel[ ,'d'])
 
 # Data-specific values we add on the graph by hand
 # NB: 0 and 1 contours are not plotted so no label is added (NA in values)
 contour_breaks <- data.frame(breaks = c(0,    0.1,   0.2,  0.5,    0.8,  1),
                              lbl.x  = c(NA,   .135,  .125, .055, .024, NA),
                              lbl.y  = c(NA,   .30,  .256,  .20,   .09, NA),
-                         lbl.angle =  c(NA,   -45,   -45,   -45,    -55,  NA))
+                          lbl.angle = c(NA,   -45,   -45,   -45,    -55,  NA))
 
 mussel_plane_plot <- 
   ggplot(NULL, aes(x = delta,y = d)) + 
@@ -125,37 +140,36 @@ mussel_plane_plot <-
                data = contour_breaks) + 
     annotate("text", x = 0.0, y = cross_section_high, label = "a ▸", 
              hjust = 1, vjust = .5) + 
-    annotate("text", x = 0.0, y = cross_section_low, label = "b ▸", 
+    annotate("text", x = 0.0, y = cross_section_mid, label = "b ▸", 
+             hjust = 1, vjust = .5) + 
+    annotate("text", x = 0.0, y = cross_section_low, label = "c ▸", 
              hjust = 1, vjust = .5) + 
     theme_minimal() + 
     ggtitle('Musselbed model')
 
-# Build high cross section
-mussel_high_cs_plot <- 
-  ggplot(subset(dat.mussel, d == cross_section_high)) + 
-    geom_line(aes(x = delta, y = mean_cover_., 
-                  group = branch, linetype = branch)) + 
-    ylab('Mussel density') + 
-    ggtitle('a.') + 
-    theme_minimal() + 
-    cross_sections_theme_adjust
+# Build cross sections plots
+mussel_high_cs_plot <- do_cs_plot(subset(dat.mussel, d == cross_section_high), 
+                                  x = delta, y = mean_cover_., 
+                                  ytitle = 'Mussel density', 
+                                  main_title = 'a.')
 
-# Build low cross section
-mussel_low_cs_plot <- 
-  ggplot(subset(dat.mussel, d == cross_section_low)) + 
-    geom_line(aes(x = delta, y = mean_cover_., 
-                  group = branch, linetype = branch)) + 
-    ylab('Mussel density') + 
-    theme_minimal() + 
-    ggtitle('b.') + 
-    cross_sections_theme_adjust + 
-    no_legend
+mussel_mid_cs_plot <- do_cs_plot(subset(dat.mussel, d == cross_section_mid), 
+                                 x = delta, y = mean_cover_., 
+                                 ytitle = 'Mussel density', 
+                                 main_title = 'b.') + 
+                                 no_legend
 
-mussel_merged_plots <- grid.arrange(mussel_plane_plot, 
-                             mussel_high_cs_plot, 
-                             mussel_low_cs_plot, 
-                             ncol = 1, 
-                             heights = c(.5, .25, .25))
+mussel_low_cs_plot <- do_cs_plot(subset(dat.mussel, d == cross_section_low), 
+                                 x = delta, y = mean_cover_., 
+                                 ytitle = 'Mussel density', 
+                                 main_title = 'c.') + 
+                                 no_legend
+
+# Merge plots and save
+mussel_merged_plots <- merge_plots(mussel_plane_plot, 
+                                   mussel_high_cs_plot,
+                                   mussel_mid_cs_plot,
+                                   mussel_low_cs_plot)
 
 ggsave(mussel_merged_plots, 
        filename = paste0(output_figure_path, FILE_PREFIX, "musselbed.png"), 
@@ -174,9 +188,9 @@ dat.grazing <- merge_branches(upper_branch[['DatBif']],
 rm(upper_branch, lower_branch)
 
 # Values for individual cross_sections
-cross_section_high <- closest_to(0.3, dat.grazing[ ,'g'])
-cross_section_low  <- closest_to(0.10, dat.grazing[ ,'g'])
-
+cross_section_high <- closest_to(0.18, dat.grazing[ ,'g'])
+cross_section_mid  <- closest_to(0.072, dat.grazing[ ,'g'])
+cross_section_low  <- closest_to(0, dat.grazing[ ,'g'])
 
 # Data-specific values we add on the graph by hand
 # NB: 0 and 1 contours are not plotted so no label is added (NA in values)
@@ -200,37 +214,37 @@ grazing_plane_plot <-
                data = contour_breaks) + 
     annotate("text", x = 0.0, y = cross_section_high, label = "a ▸", 
              hjust = 1, vjust = .5) + 
-    annotate("text", x = 0.0, y = cross_section_low, label = "b ▸", 
+    annotate("text", x = 0.0, y = cross_section_mid, label = "b ▸", 
+             hjust = 1, vjust = .5) + 
+    annotate("text", x = 0.0, y = cross_section_low, label = "c ▸", 
              hjust = 1, vjust = .5) + 
     theme_minimal() + 
     ggtitle('Grazing model')
 
-# Build high cross section
-grazing_high_cs_plot <- 
-  ggplot(subset(dat.grazing, g == cross_section_high)) + 
-    geom_line(aes(x = m0, y = mean_cover_., 
-                  group = branch, linetype = branch)) + 
-    ylab('Veg. density') + 
-    ggtitle('a.') + 
-    theme_minimal() + 
-    cross_sections_theme_adjust
+# Build cross sections plots
+grazing_high_cs_plot <- do_cs_plot(subset(dat.grazing, g == cross_section_high), 
+                                   x = m0, y = mean_cover_., 
+                                   ytitle = 'Forest density', 
+                                   main_title = 'a.')
 
-# Build low cross section
-grazing_low_cs_plot <- 
-  ggplot(subset(dat.grazing, g == cross_section_low)) + 
-    geom_line(aes(x = m0, y = mean_cover_., 
-                  group = branch, linetype = branch)) + 
-    ylab('Veg. density') + 
-    theme_minimal() + 
-    ggtitle('b.') + 
-    cross_sections_theme_adjust + 
-    no_legend
+grazing_mid_cs_plot <- do_cs_plot(subset(dat.grazing, g == cross_section_mid), 
+                                  x = m0, y = mean_cover_., 
+                                  ytitle = 'Forest density', 
+                                  main_title = 'b.') + 
+                                  no_legend
+                                  
+grazing_low_cs_plot <- do_cs_plot(subset(dat.grazing, g == cross_section_low), 
+                                  x = m0, y = mean_cover_., 
+                                  ytitle = 'Forest density', 
+                                  main_title = 'c.') +
+                                  no_legend
 
-grazing_merged_plots <- grid.arrange(grazing_plane_plot, 
-                             grazing_high_cs_plot, 
-                             grazing_low_cs_plot, 
-                             ncol = 1, 
-                             heights = c(.5, .25, .25))
+
+grazing_merged_plots <- merge_plots(grazing_plane_plot, 
+                                    grazing_high_cs_plot,
+                                    grazing_mid_cs_plot,
+                                    grazing_low_cs_plot)
+
 
 ggsave(grazing_merged_plots, 
        filename = paste0(output_figure_path, FILE_PREFIX, "grazing.png"), 
@@ -249,8 +263,9 @@ dat.forestgap <- merge_branches(upper_branch[['DatBif']],
 rm(upper_branch, lower_branch)
 
 # Values for individual cross_sections
-cross_section_high <- closest_to(0.21, dat.forestgap[ ,'delta'])
-cross_section_low  <- closest_to(0.10, dat.forestgap[ ,'delta'])
+cross_section_high <- closest_to(0.189, dat.forestgap[ ,'delta'])
+cross_section_mid  <- closest_to(0.07, dat.forestgap[ ,'delta'])
+cross_section_low  <- closest_to(0, dat.forestgap[ ,'delta'])
 
 # Data-specific values we add on the graph by hand
 # NB: 0 and 1 contours are not plotted so no label is added (NA in values)
@@ -274,37 +289,35 @@ forestgap_plane_plot <-
                data = contour_breaks) + 
     annotate("text", x = 0.0, y = cross_section_high, label = "a ▸", 
              hjust = 1, vjust = .5) + 
-    annotate("text", x = 0.0, y = cross_section_low, label = "b ▸", 
+    annotate("text", x = 0.0, y = cross_section_mid, label = "b ▸", 
+             hjust = 1, vjust = .5) + 
+    annotate("text", x = 0.0, y = cross_section_low, label = "c ▸", 
              hjust = 1, vjust = .5) + 
     theme_minimal() + 
     ggtitle('Forest Gap model')
 
-# Build high cross section
-forestgap_high_cs_plot <- 
-  ggplot(subset(dat.forestgap, delta == cross_section_high)) + 
-    geom_line(aes(x = d, y = mean_cover_., 
-                  group = branch, linetype = branch)) + 
-    ylab('Forest density') + 
-    ggtitle('a.') + 
-    theme_minimal() + 
-    cross_sections_theme_adjust
-    
-# Build low cross section
-forestgap_low_cs_plot <- 
-  ggplot(subset(dat.forestgap, delta == cross_section_low)) + 
-    geom_line(aes(x = d, y = mean_cover_., 
-                  group = branch, linetype = branch)) + 
-    ylab('Forest density') + 
-    theme_minimal() + 
-    ggtitle('b.') + 
-    cross_sections_theme_adjust + 
-    no_legend
+# Build cross sections plots
+forestgap_high_cs_plot <- do_cs_plot(subset(dat.forestgap, delta == cross_section_high), 
+                                   x = d, y = mean_cover_., 
+                                   ytitle = 'Forest density', 
+                                   main_title = 'a.')
 
-forestgap_merged_plots <- grid.arrange(forestgap_plane_plot, 
-                                       forestgap_high_cs_plot, 
-                                       forestgap_low_cs_plot, 
-                                       ncol = 1, 
-                                       heights = c(.5, .25, .25))
+forestgap_mid_cs_plot <- do_cs_plot(subset(dat.forestgap, delta == cross_section_mid), 
+                                  x = d, y = mean_cover_., 
+                                  ytitle = 'Forest density', 
+                                  main_title = 'b.') + 
+                                  no_legend
+                                  
+forestgap_low_cs_plot <- do_cs_plot(subset(dat.forestgap, delta == cross_section_low), 
+                                  x = d, y = mean_cover_., 
+                                  ytitle = 'Forest density', 
+                                  main_title = 'c.') +
+                                  no_legend
+
+forestgap_merged_plots <- merge_plots(forestgap_plane_plot, 
+                                      forestgap_high_cs_plot,
+                                      forestgap_mid_cs_plot,
+                                      forestgap_low_cs_plot)
 
 ggsave(forestgap_merged_plots, 
        filename = paste0(output_figure_path, FILE_PREFIX, "forestgap.png"), 
@@ -320,14 +333,20 @@ ggsave(forestgap_merged_plots,
 all_plots_merged <- grid.arrange(mussel_plane_plot, 
                                  grazing_plane_plot, 
                                  forestgap_plane_plot,
+                                 
                                  mussel_high_cs_plot, 
                                  grazing_high_cs_plot, 
                                  forestgap_high_cs_plot, 
+                                 
+                                 mussel_mid_cs_plot, 
+                                 grazing_mid_cs_plot, 
+                                 forestgap_mid_cs_plot, 
+                                 
                                  mussel_low_cs_plot, 
                                  grazing_low_cs_plot, 
                                  forestgap_low_cs_plot, 
                                  ncol = 3,
-                                 heights = c( .5, .25, .25),
+                                 heights = c( .5, .5/3, .5/3, .5/3),
                                  widths  = c(1/3, 1/3, 1/3))
 
 ggsave(all_plots_merged, 
