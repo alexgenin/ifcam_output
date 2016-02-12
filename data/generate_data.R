@@ -99,6 +99,17 @@ FORESTGAP_CS_PARMS <- list(delta = c(0.189, 0.07, 0),
 
 # Helper function that runs simulation, taking into account global params
 do_simus <- function(model, parms, init, size) { 
+  
+  # We reset the cluster with each call to do_simus, otherwise 
+  #   memory consumptions explodes
+  # Register parallel backend
+  if (PARALLEL) { 
+    stopImplicitCluster()
+    registerDoParallel(cores = NCORES)
+  } else { 
+    registerDoSEQ()
+  }
+  
   ca_arraySS(model, init = init, width = size, height = size, 
              parms = parms, nsnaps = NSNAPS, length.stat = LENGTH.STAT,
              t_min = TMIN, t_max = TMAX)
@@ -106,12 +117,6 @@ do_simus <- function(model, parms, init, size) {
 
 
 
-# Register parallel backend
-if (PARALLEL) { 
-  registerDoParallel(cores = NCORES)
-} else { 
-  registerDoSEQ()
-}
 
 
 # registerDoSEQ()
@@ -141,7 +146,7 @@ if (REDO_COMPUTATIONS_PD) {
   parms[names(FORESTGAP_PD_PARMS)] <- FORESTGAP_PD_PARMS
 
   result_forestgap_upper <- do_simus(grazing, parms, FORESTGAP_INIT_UPPER, SIZE_PD)
-  result_forestgap_lower <- do_simus(grazing, parms, FORESTGAP_INIT_LOWER, SIZE_PD)
+#   result_forestgap_lower <- do_simus(grazing, parms, FORESTGAP_INIT_LOWER, SIZE_PD)
   
   save(result_forestgap_lower, result_forestgap_upper, 
        file = "./result_forestgap.rda", compress = 'bzip2')
@@ -157,7 +162,7 @@ if (REDO_COMPUTATIONS_PD) {
   parms[names(MUSSELBED_PD_PARMS)] <- MUSSELBED_PD_PARMS
   
   result_musselbed_upper <- do_simus(grazing, parms, MUSSELBED_INIT_UPPER, SIZE_PD)
-  result_musselbed_lower <- do_simus(grazing, parms, MUSSELBED_INIT_LOWER, SIZE_PD)
+#   result_musselbed_lower <- do_simus(grazing, parms, MUSSELBED_INIT_LOWER, SIZE_PD)
   
   save(result_musselbed_lower, result_musselbed_upper, 
        file = "./result_musselbed.rda", compress = 'bzip2')
@@ -180,27 +185,29 @@ if (REDO_COMPUTATIONS_CS) {
   parms <- GRAZING_DEFAULT_PARMS
   parms[names(GRAZING_CS_PARMS)] <- GRAZING_CS_PARMS # mind the single bracket
   
-  result_grazing_upper <- do_simus(grazing, parms, GRAZING_INIT_UPPER, SIZE_CS)
+#   result_grazing_upper <- do_simus(grazing, parms, GRAZING_INIT_UPPER, SIZE_CS)
   result_grazing_lower <- do_simus(grazing, parms, GRAZING_INIT_LOWER, SIZE_CS)
+  
   save(result_grazing_lower, result_grazing_upper, 
        file = "./result_grazing_cs.rda", compress = 'bzip2')
+  
   rm(result_grazing_upper)
   rm(result_grazing_lower)
-  
+  gc()
   
   # Forestgap model -------------
   parms <- FORESTGAP_DEFAULT_PARMS
   parms[names(FORESTGAP_CS_PARMS)] <- FORESTGAP_CS_PARMS 
   
   result_forestgap_upper <- do_simus(forestgap, parms, FORESTGAP_INIT_UPPER, SIZE_CS)
-  result_forestgap_lower <- do_simus(forestgap, parms, FORESTGAP_INIT_LOWER, SIZE_CS)
+#   result_forestgap_lower <- do_simus(forestgap, parms, FORESTGAP_INIT_LOWER, SIZE_CS)
   
-  save(result_forestgap_lower, result_forestgap_upper, 
+  save(result_forestgap_upper, 
       file = "./result_forestgap_cs.rda", compress = 'bzip2')
   
-  rm(result_forestgap_lower)
+#   rm(result_forestgap_lower)
   rm(result_forestgap_upper)
-
+  gc()
   
   # Musselbed model -------------
   parms <- MUSSELBED_DEFAULT_PARMS
@@ -214,7 +221,7 @@ if (REDO_COMPUTATIONS_CS) {
   
   rm(result_musselbed_lower)
   rm(result_musselbed_upper)
-  
+  gc()
   
 }
 
