@@ -4,7 +4,7 @@
 # 
 
 # Base paths (with / at the end /!\)
-result_folder <- '/home/alex/work/2015-2016/SpatialStress/ifcam_output/data/' 
+result_folder <- '/home/alex/work/2014-2015/SpatialStress/ifcam_output/data/' 
 setwd(result_folder)
 
 library(caspr)
@@ -26,6 +26,22 @@ convert_dat <- function(upper_branch, lower_branch, newfile) {
   
   rm(lower_branch, upper_branch)
 }
+
+# Function that actually does the conversion, just for a single branch
+convert_dat_onebranch <- function(branch, newfile) { 
+
+  # Convert all matrices to binary_matrices (for loop = less memory used)
+  for (i in seq.int(branch[[2]])) { 
+    cat('.')
+    branch[[2]][[i]] <- lapply(branch[[2]][[i]], as.binary_matrix)
+#     lower_branch[[2]][[i]] <- lapply(lower_branch[[2]][[i]], as.binary_matrix)
+  }
+  cat('\n')
+  save(branch, file = newfile, compress = 'bzip2')
+  
+  rm(branch)
+}
+
 
 
 
@@ -81,9 +97,9 @@ if ( CONVERT_CS ) {
 
   # Convert grazing
   load(paste0(result_folder,'result_grazing_cs.rda'), verbose = TRUE)
-  convert_dat(result_grazing_upper, result_grazing_lower, 
-              newfile = paste0(result_folder, "result_grazing_cs_processed.rda" ))
-  rm(result_grazing_upper, result_grazing_lower)
+  convert_dat_onebranch(result_grazing_upper, #  result_grazing_lower,  # not present at the moment there
+                        newfile = paste0(result_folder, "result_grazing_cs_processed.rda" ))
+  rm(result_grazing_upper) #, result_grazing_lower)
   gc()
 
-}
+# }
