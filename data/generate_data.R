@@ -40,8 +40,8 @@ NSNAPS  <- 10   # Number of snapshots to save at the end of simulation
 REDO_COMPUTATIONS_PD <- FALSE # Redo computations for phase diagrams
 REDO_COMPUTATIONS_CS <- TRUE # Redo computations for cross-sections
 LENGTH.STAT <- 200 # Number of time steps to consider when computing mean covers
-TMIN <- 500  # Minimum simulation time
-TMAX <- 3000 # Maximum simulation time (in case no eq is found)
+TMIN <- 500  # Minimum simulation time before taking snaps 
+TMAX <- 3000 # Maximum simulation time before taking snaps (if no eq is found)
 
 # Computation-related variables
 PARALLEL <- TRUE
@@ -91,10 +91,10 @@ GRAZING_CS_PARMS   <- list(m0 = seq(0, .4, length.out = RES_CS),
                            g  = c(0.18, 0.072, 0))
 
 MUSSELBED_CS_PARMS <- list(d = c(0.60, 0.24, 0), 
-                           delta = seq(0, .3, length.out = RES_PD))
+                           delta = seq(0, .3, length.out = RES_CS))
 
 FORESTGAP_CS_PARMS <- list(delta = c(0.189, 0.07, 0), 
-                           d = seq(0, .25, length.out = RES_PD))
+                           d = seq(0, .25, length.out = RES_CS))
 
 
 # Helper function that runs simulation, taking into account global params
@@ -185,41 +185,39 @@ if (REDO_COMPUTATIONS_CS) {
   parms <- GRAZING_DEFAULT_PARMS
   parms[names(GRAZING_CS_PARMS)] <- GRAZING_CS_PARMS # mind the single bracket
   
-#   result_grazing_upper <- do_simus(grazing, parms, GRAZING_INIT_UPPER, SIZE_CS)
-  result_grazing_lower <- do_simus(grazing, parms, GRAZING_INIT_LOWER, SIZE_CS)
+  result_grazing_upper <- do_simus(grazing, parms, GRAZING_INIT_UPPER, SIZE_CS)
   
-  save(result_grazing_lower, result_grazing_upper, 
+  save(result_grazing_upper, 
        file = "./result_grazing_cs.rda", compress = 'bzip2')
   
   rm(result_grazing_upper)
-  rm(result_grazing_lower)
   gc()
+  
+  
   
   # Forestgap model -------------
   parms <- FORESTGAP_DEFAULT_PARMS
   parms[names(FORESTGAP_CS_PARMS)] <- FORESTGAP_CS_PARMS 
   
   result_forestgap_upper <- do_simus(forestgap, parms, FORESTGAP_INIT_UPPER, SIZE_CS)
-#   result_forestgap_lower <- do_simus(forestgap, parms, FORESTGAP_INIT_LOWER, SIZE_CS)
   
   save(result_forestgap_upper, 
       file = "./result_forestgap_cs.rda", compress = 'bzip2')
   
-#   rm(result_forestgap_lower)
   rm(result_forestgap_upper)
   gc()
+  
+  
   
   # Musselbed model -------------
   parms <- MUSSELBED_DEFAULT_PARMS
   parms[names(MUSSELBED_CS_PARMS)] <- MUSSELBED_CS_PARMS 
   
   result_musselbed_upper <- do_simus(musselbed, parms, MUSSELBED_INIT_UPPER, SIZE_CS)
-  result_musselbed_lower <- do_simus(musselbed, parms, MUSSELBED_INIT_LOWER, SIZE_CS)
   
-  save(result_musselbed_lower, result_musselbed_upper, 
+  save(result_musselbed_upper, 
       file = "./result_musselbed_cs.rda", compress = 'bzip2')
   
-  rm(result_musselbed_lower)
   rm(result_musselbed_upper)
   gc()
   
