@@ -55,3 +55,9 @@ figures include 4x4 and 10x10 coarse-graining length as indicated in the file
 name. 
 
 -> Link: [Generic indicators](./figures/generic_indicators/)
+
+Figures include theo observed trends with standard deviations in black/gray, and
+null trends with standard deviations in red/light red. Trends are displayed
+along the homogeneous stressor gradient, with three values of the heterogeneous
+stressor (columns).
+
