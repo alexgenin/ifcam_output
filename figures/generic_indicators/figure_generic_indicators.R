@@ -16,7 +16,7 @@ library(spatialwarnings)
 # install_github('fdschneider/spatial_warnings') # mind the _
 
 # Indicator computation parms
-CG_SUBSIZE <- 4
+CG_SUBSIZE <- 10
 NULL_REPS <- 99
 
 # Define output path 
@@ -73,24 +73,6 @@ load_url <- function(url, cleanup = FALSE, ...) {
   return(TRUE)
 }
 
-# Merge two summary data.frames
-merge_branches <- function(upper, lower) { 
-  data.frame(branch = c(rep('Upper branch', nrow(upper)), 
-                        rep('Lower branch', nrow(lower))),
-             rbind(upper, lower))
-}
-
-# Get the closest value in a vector
-closest_to <- function(val, X, quiet = FALSE) { 
-  index <- which( abs(val - X) == min(abs(val - X)) )
-  new_value <- X[min(index)]
-  if (!quiet) { 
-    cat('Picked value ', new_value, ' (error: ', new_value - val,')\n', sep ='')
-  }
-  return(new_value)
-}
-
-
 add_generic_indic <- function(df, # data.frame of all simulations (DatBif)
                               matrices, # corresponding matrices (list of lists)
                               subsize, # coarse-graining subsize
@@ -99,7 +81,7 @@ add_generic_indic <- function(df, # data.frame of all simulations (DatBif)
   
   # Compute generic indicators (uses summary method for generic spews)
   result <- llply(matrices, generic_spews, subsize = subsize, ...)
-  result <- llply(result, summary, null_replicates = null_replicates, ...)
+  result <- llply(result, indictest, null_replicates = null_replicates, ...)
   
   # Add ID column for merge
   ids <- Map(rep, df[ ,'ID'], lapply(result, nrow))
