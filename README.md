@@ -70,7 +70,9 @@ upper_branch[['time_series']]
 
 # Generic indicators
 
-Trends for generic indicators are available in the figures folder. Current
+## Spatial
+
+Trends for spatial generic indicators are available in the figures folder. Current
 figures include 4x4 and 10x10 coarse-graining length as indicated in the file
 name.
 
@@ -80,4 +82,13 @@ Figures include theo observed trends with standard deviations in black/gray, and
 null trends with standard deviations in red/light red. Trends are displayed
 along the homogeneous stressor gradient, with three values of the heterogeneous
 stressor (columns).
+
+## Temporal
+
+Current temporal indicators are available in the figures folder. Indicators 
+are computed using the last 300 values of the time series (oscillations around
+equilibrium). 
+
+-> Link: [Temporal indicators](./figures/temporal_indicators/)
+
 
