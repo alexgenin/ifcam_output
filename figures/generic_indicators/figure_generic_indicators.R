@@ -136,8 +136,8 @@ grazing_csplot <-
     ggtitle('Grazing model')
 
 ggsave(paste0(output_figure_path, FILE_PREFIX, "grazing.pdf"),
-                   width = GRAPH_WIDTH, height = GRAPH_HEIGHT,
-                   plot = grazing_csplot)
+       width = GRAPH_WIDTH, height = GRAPH_HEIGHT,
+       plot = grazing_csplot)
 
 rm(branch)
 gc()
@@ -192,8 +192,8 @@ forestgap_csplot <-
     ggtitle('Forestgap model')
 
 ggsave(paste0(output_figure_path, FILE_PREFIX, "forestgap.pdf"),
-                   width = GRAPH_WIDTH, height = GRAPH_HEIGHT,
-                   plot = forestgap_csplot)
+       width = GRAPH_WIDTH, height = GRAPH_HEIGHT,
+       plot = forestgap_csplot)
 
 rm(branch)
 gc()
@@ -235,8 +235,8 @@ musselbed_csplot <-
     ggtitle('Musselbed model')
 
 ggsave(paste0(output_figure_path, FILE_PREFIX, "musselbed.pdf"),
-                   width = GRAPH_WIDTH, height = GRAPH_HEIGHT,
-                   plot = musselbed_csplot)
+       width = GRAPH_WIDTH, height = GRAPH_HEIGHT,
+       plot = musselbed_csplot)
 
 rm(branch)
 gc()
