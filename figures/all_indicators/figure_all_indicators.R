@@ -21,7 +21,7 @@ library(spatialwarnings)
 # Indicator computation parms
 CG_SUBSIZE <- 10
 LASTN <- 300 # for temporal indicators, take the last xx time steps
-NULL_REPS <- 9
+NULL_REPS <- 499
 
 # Define output path 
 # /!\ NB: folders must have a trailing /
@@ -49,11 +49,13 @@ files <- list(musselbed = paste0(data_folder, "result_musselbed_processed.rda"),
               musselbed_cs = paste0(data_folder, "result_musselbed_cs_processed.rda"))
 
 # Use parallelism ? 
-PARALLEL <- TRUE
+PARALLEL <- FALSE
 
 # Register parallel backend
 if (PARALLEL) { 
-  registerDoParallel(cores = 5)
+  # Note: we explicitely request a PSOCK cluster as fork()-based method crash...
+  cl <- makePSOCKcluster(3)
+  registerDoParallel(cl = cl)
 } else { 
   registerDoSEQ()
 }
@@ -126,7 +128,6 @@ add_indics <- function(df, # data.frame of all simulations (DatBif)
   # Compute spatial generic indicators and null values
   result_genic <- llply(matrices, generic_spews, subsize = subsize, 
                         detrend = FALSE, moranI_coarse_grain = FALSE, ...)
-  browser()
   result_genic <- llply(result_genic, indictest, 
                         null_replicates = null_replicates, 
                         ...)
@@ -211,9 +212,9 @@ upper_result <- add_indics(branch[['DatBif']],
                            subsize = CG_SUBSIZE, 
                            null_replicates = NULL_REPS, 
                            .progress = 'time',
-                           .parallel = FALSE)
+                           .parallel = PARALLEL)
 
-upper_result_trend <- summarise_trend(upper_result_parms, ~ ID + indicator + g + m0)
+upper_result_trend <- summarise_trend(upper_result, ~ ID + indicator + g + m0)
 
 shift_df <- create_shift_data_frame(upper_result_trend, "g", "m0")
 
@@ -228,7 +229,7 @@ save(upper_result, upper_result_trend, shift_df,
 # save.image('grazing_allindic.rda')
 
 # Plot chosen cross-sections
-forestgap_csplot <- 
+grazing_csplot <- 
   ggplot(upper_result_trend) + 
     geom_ribbon(aes(m0, ymin = null.sd_below, ymax = null.sd_above), 
                 alpha = .2, color = 'red') + 
@@ -250,7 +251,7 @@ forestgap_csplot <-
 
 ggsave(paste0(output_figure_path, FILE_PREFIX, "grazing.pdf"),
        width = GRAPH_WIDTH, height = GRAPH_HEIGHT,
-       plot = forestgap_csplot)
+       plot = grazing_csplot)
 
 rm(branch)
 gc()
@@ -272,10 +273,10 @@ upper_result <- add_indics(branch[['DatBif']],
                            subsize = CG_SUBSIZE, 
                            null_replicates = NULL_REPS, 
                            .progress = 'time',
-                           .parallel = FALSE)
-save.image("forestgap.dump.rda")
+                           .parallel = PARALLEL)
+# save.image("forestgap.dump.rda")
 
-upper_result_trend <- summarise_trend(upper_result_parms, ~ ID + indicator + delta + d)
+upper_result_trend <- summarise_trend(upper_result, ~ ID + indicator + delta + d)
 
 shift_df <- create_shift_data_frame(upper_result_trend, "delta", "d")
 
@@ -303,14 +304,14 @@ forestgap_csplot <-
                data = shift_df) + 
     facet_grid(indicator ~ pretty_delta, scales = 'free_y', 
                switch = "y") + 
-    ggtitle('Grazing model') + 
+    ggtitle('Forestgap model') + 
     xlab( expression(m[0]) ) + 
     theme_bw() + 
     theme(axis.title.y = element_blank(), 
           strip.background = element_blank(), 
           panel.border = element_rect(fill = NA, linetype = 'dotted', color = 'grey20'))
 
-ggsave(paste0(output_figure_path, FILE_PREFIX, "grazing.pdf"),
+ggsave(paste0(output_figure_path, FILE_PREFIX, "forestgap.pdf"),
        width = GRAPH_WIDTH, height = GRAPH_HEIGHT,
        plot = forestgap_csplot)
 
@@ -326,35 +327,53 @@ gc()
 # Musselbed model
 # -------------------------
 
-load_url(files[['musselbed_cs']], verbose = TRUE)
+if ( !exists("branch") ) { 
+  load_url(files[['musselbed_cs']], verbose = TRUE)
+}
 
-upper_result <- add_generic_indic(branch[['DatBif']], 
-                                  branch[['snaps']], 
-                                  subsize = CG_SUBSIZE, 
-                                  null_replicates = NULL_REPS, 
-                                  .progress = 'time',
-                                  .parallel = PARALLEL)
+upper_result <- add_indics(branch[['DatBif']], 
+                           branch[['snaps']], 
+                           branch[['time_series']],
+                           subsize = CG_SUBSIZE, 
+                           null_replicates = NULL_REPS, 
+                           .progress = 'time',
+                           .parallel = FALSE)
+# save.image("musselbed.dump.rda")
 
-upper_result_trend <- ddply(upper_result, ~ ID + indicator + d + delta, 
-                            summarise, 
-                            value.mean = mean(value), 
-                            value.sd_above = mean(value) + sd(value), 
-                            value.sd_below = mean(value) - sd(value),
-                            null.mean = mean(null_mean), 
-                            null.sd_above = mean(null_mean) + sd(null_mean), 
-                            null.sd_below = mean(null_mean) - sd(null_mean),
-                            .progress = 'time')
+upper_result_trend <- summarise_trend(upper_result, ~ ID + indicator + delta + d)
 
+shift_df <- create_shift_data_frame(upper_result_trend, "d", "delta")
+
+upper_result_trend[ ,'pretty_d'] <- with(upper_result_trend, paste0("d = ", d))
+shift_df[ ,'pretty_d'] <- with(shift_df, paste0("d = ", d))
+
+save(upper_result, upper_result_trend, shift_df, 
+     file = paste0(output_figure_path, "musselbed_all_indic_", 
+                   CG_SUBSIZE, "x", CG_SUBSIZE, ".rda"))
+     
+
+# save.image('grazing_allindic.rda')
+
+# Plot chosen cross-sections
 musselbed_csplot <- 
   ggplot(upper_result_trend) + 
-    geom_ribbon(aes(delta, ymin = null.sd_below, ymax = null.sd_above), alpha = .2, 
-                color = 'red') + 
+    geom_ribbon(aes(delta, ymin = null.sd_below, ymax = null.sd_above), 
+                alpha = .2, color = 'red') + 
     geom_line(aes(delta, null.mean), color = 'red') + 
     geom_ribbon(aes(delta, ymin = value.sd_below, ymax = value.sd_above), 
                 alpha = .4, color = 'black') + 
-    geom_line(aes(delta, value.mean), alpha = .6, color = 'black')  + 
-    facet_grid( indicator ~ d, scales = 'free_y', labeller = label_both) + 
-    ggtitle('Musselbed model')
+    geom_line(aes(delta, value.mean), alpha = .9, color = 'black')  + 
+    geom_vline(aes(xintercept = xshift), 
+               color = 'grey50', linetype = 'dashed',
+               data = shift_df) + 
+    facet_grid(indicator ~ pretty_d, scales = 'free_y', 
+               switch = "y") + 
+    ggtitle('Musselbed model') + 
+    xlab( expression(m[0]) ) + 
+    theme_bw() + 
+    theme(axis.title.y = element_blank(), 
+          strip.background = element_blank(), 
+          panel.border = element_rect(fill = NA, linetype = 'dotted', color = 'grey20'))
 
 ggsave(paste0(output_figure_path, FILE_PREFIX, "musselbed.pdf"),
        width = GRAPH_WIDTH, height = GRAPH_HEIGHT,
@@ -362,6 +381,4 @@ ggsave(paste0(output_figure_path, FILE_PREFIX, "musselbed.pdf"),
 
 rm(branch)
 gc()
-
-
 
