@@ -28,7 +28,7 @@ data_folder <- '/home/alex/work/2014-2015/SpatialStress/ifcam_output/data/'
 # Use this folder if you do not have the results on your computer: it will fetch
 #   the latest ones.
 # data_folder <- "http://alex.lecairn.org/ifcam/" 
-files <- list(musselbed = paste0(data_folder, "result_musselbed_processed.rda"),
+files <- list(musselbed_cs = paste0(data_folder, "result_musselbed_cs_processed.rda"),
               grazing   = paste0(data_folder, "result_grazing_processed.rda"),
               forestgap = paste0(data_folder, "result_forestgap_processed.rda"))
 
@@ -94,6 +94,8 @@ setwd(working_directory)
 GRAPH_WIDTH <- 5
 GRAPH_HEIGHT <- GRAPH_WIDTH * 2 # The 2x value ensures that 2D planes are squareish
 FILE_PREFIX <- 'bifurc_diagram_'
+
+
 
 
 
@@ -179,14 +181,7 @@ datbif_grazing[ ,'homo'] <- datbif_grazing[ ,'m0']
 datbif_grazing[ ,'pretty_hetero'] <- with(datbif_grazing, paste0("g = ", g))
 datbif_grazing[ ,'model'] <- "Grazing model"
 
-ggplot(datbif_grazing) + 
-  geom_line(aes(x = m0, y = rhop, 
-                linetype = eq_type, color = pretty_hetero,
-                group = paste(eq_type, branch, stability, pretty_hetero))) + 
-  facet_grid(type ~ ., switch = "y", scales = 'free_y') + 
-  ylab( expression(rho[symbol("+")]) ) + 
-  xlab( expression(m[0]) ) + 
-  theme_ifcam # + no_legend
+
 
 
 
@@ -242,17 +237,6 @@ datbif_forestgap[ ,'hetero'] <- datbif_forestgap[ ,'delta']
 datbif_forestgap[ ,'pretty_hetero'] <- with(datbif_forestgap, paste0("delta = ", delta))
 datbif_forestgap[ ,'model'] <- "Forest Gap Model"
 
-ggplot(datbif_forestgap) + 
-  geom_line(aes(x = d, y = rhop, 
-                linetype = eq_type, color = pretty_hetero,
-                group = paste(eq_type, branch, pretty_hetero))) + 
-  facet_grid(type ~ ., switch = "y", scales = 'free_y') + 
-  ylab( expression(rho[symbol("+")]) ) + 
-  xlab( expression(d) ) + 
-  scale_linetype_manual(values = c(2, 1)) + # need to switch line types 
-  theme_ifcam + no_legend
-
-
 
 
 
@@ -263,14 +247,12 @@ ggplot(datbif_forestgap) +
 
 
 # Load data regarding spatial model
-if ( ! exists("upper_branch") ) { load_url(files[["musselbed"]]) }
+if ( ! exists("upper_branch") ) { load_url(files[["musselbed_cs"]]) }
 
-dat <- merge_branches(upper_branch[["DatBif"]], 
-                         lower_branch[["DatBif"]])
-rm(upper_branch, lower_branch)
+dat <- branch[["DatBif"]]
 
 # Note that we need .6 here but we only have up to .3 -> rerun simulations
-d_values <- sapply(c(0, .24, .3), closest_to, dat[ ,'d'])
+d_values <- sapply(c(0, .24, .6), closest_to, dat[ ,'d'])
 datbif_spatial <- subset(dat, d %in% d_values)
 datbif_spatial[ ,'rhop'] <- datbif_spatial[ ,'mean_cover_.'] # give it a sensible nameà)
 datbif_spatial[ ,'eq_type'] <- "stable" # we only have stable eqs in spatial sims
@@ -326,19 +308,13 @@ datbif_musselbed[ ,'model'] <- "Musselbed model"
 datbif_musselbed[ ,'branch'] <- NA # for compat with other graphs
 
 
-ggplot(datbif_musselbed) + 
-  geom_line(aes(x = homo, y = rhop, 
-                linetype = eq_type./bifurcation_d, color = pretty_hetero,
-                group = paste(eq_type, branch, pretty_hetero))) + 
-  facet_grid(type ~ ., switch = "y", scales = 'free_y') + 
-  ylab( expression(rho[symbol("+")]) ) + 
-  xlab( expression(delta) ) + 
-#   scale_linetype_manual(values = c(2, 1)) + # need to switch line types 
-  theme_ifcam + no_legend
+
 
 
 
 # Merge all three together
+# ------------------
+
 cols <- c('model', 'type', 'homo', 'hetero', 'hetero_rank',
           'pretty_hetero', 'rhop', 'eq_type', 'branch')
 datbif_all <- rbind(datbif_grazing[ ,cols],
