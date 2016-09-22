@@ -61,6 +61,13 @@ if (PARALLEL) {
 }
 
 
+# Graph theme
+theme_ifcam <- 
+  theme_bw() + 
+  theme(axis.title.y = element_blank(), 
+        strip.background = element_blank(), 
+        panel.border = element_rect(fill = NA, linetype = 'dotted', color = 'grey20'))
+
 
 # Define some helper functions
 
@@ -244,10 +251,7 @@ grazing_csplot <-
                switch = "y") + 
     ggtitle('Grazing model') + 
     xlab( expression(m[0]) ) + 
-    theme_bw() + 
-    theme(axis.title.y = element_blank(), 
-          strip.background = element_blank(), 
-          panel.border = element_rect(fill = NA, linetype = 'dotted', color = 'grey20'))
+    theme_ifcam
 
 ggsave(paste0(output_figure_path, FILE_PREFIX, "grazing.pdf"),
        width = GRAPH_WIDTH, height = GRAPH_HEIGHT,
@@ -306,11 +310,8 @@ forestgap_csplot <-
                switch = "y") + 
     ggtitle('Forestgap model') + 
     xlab( expression(m[0]) ) + 
-    theme_bw() + 
-    theme(axis.title.y = element_blank(), 
-          strip.background = element_blank(), 
-          panel.border = element_rect(fill = NA, linetype = 'dotted', color = 'grey20'))
-
+    theme_ifcam
+    
 ggsave(paste0(output_figure_path, FILE_PREFIX, "forestgap.pdf"),
        width = GRAPH_WIDTH, height = GRAPH_HEIGHT,
        plot = forestgap_csplot)
@@ -370,10 +371,7 @@ musselbed_csplot <-
                switch = "y") + 
     ggtitle('Musselbed model') + 
     xlab( expression(m[0]) ) + 
-    theme_bw() + 
-    theme(axis.title.y = element_blank(), 
-          strip.background = element_blank(), 
-          panel.border = element_rect(fill = NA, linetype = 'dotted', color = 'grey20'))
+    theme_ifcam
 
 ggsave(paste0(output_figure_path, FILE_PREFIX, "musselbed.pdf"),
        width = GRAPH_WIDTH, height = GRAPH_HEIGHT,
