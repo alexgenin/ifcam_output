@@ -152,8 +152,8 @@ getroots_grazing <- function(zpoly, pars) {
         eq_type <- c("unstable", "stable", "unstable")
         branch <- c('lower', "unst", 'upper')
       } else { 
-        eq_type <- c('unstable', "unstable")
-        branch  <- c("unst", 'upper')
+        eq_type <- c("unstable")
+        branch  <- c('unst')
       }
       
       data.frame(branch = branch, 
@@ -164,7 +164,7 @@ getroots_grazing <- function(zpoly, pars) {
 
 # Use g values for 
 graph_values <- expand.grid(g = c(0, 0.1, 0.18),
-                            m0 = seq(0, .4, length.out = 500))
+                            m0 = seq(0, 1, length.out = 1000))
 datbif_meanf <- getroots_grazing(grazing_zpoly, graph_values)
 
 datbif_meanf[ ,'hetero_rank'] <- rank2(datbif_meanf[ ,'g'])
@@ -217,10 +217,10 @@ datbif_meanf <- ddply(graph_values, names(graph_values), function(df) {
   delta <- df[ ,'delta']; d <- df[ ,'d']
   det <- abs(sqrt( (alpha + delta + d)^2 - 4*alpha*delta )) # typo in doc here
   rbind( data.frame(eq_type = "unstable", # see document
-                    branch = NA, 
+                    branch = NA_character_, 
                     rhop = ((alpha + delta + d) + det) / (2 * alpha)), 
          data.frame(eq_type = "stable", # see document
-                    branch = NA, 
+                    branch = NA_character_, 
                     rhop = ((alpha + delta + d) - det) / (2 * alpha)) )
 })
          
@@ -257,6 +257,13 @@ datbif_spatial <- subset(dat, d %in% d_values)
 datbif_spatial[ ,'rhop'] <- datbif_spatial[ ,'mean_cover_.'] # give it a sensible nameà)
 datbif_spatial[ ,'eq_type'] <- "stable" # we only have stable eqs in spatial sims
 datbif_spatial[ ,'hetero_rank'] <- rank2(datbif_spatial[ ,'d'])
+  result_grazing_upper <- dlply(parms, ~ ID, function(df) { 
+      do_simus(grazing, parms = as.list(df[ ,-1]), init = GRAZING_INIT_UPPER, 
+              size = SIZE_CS)
+    }, .progress = 'time', .parallel = PARALLEL)
+
+  save(result_grazing_upper, 
+      file = "./result_grazing_zoom.rda", compress = 'bzip2')
 
 
 # Common musselbed parameters used
@@ -311,7 +318,6 @@ datbif_musselbed[ ,'branch'] <- NA # for compat with other graphs
 
 
 
-
 # Merge all three together
 # ------------------
 
@@ -324,21 +330,34 @@ datbif_all <- rbind(datbif_grazing[ ,cols],
 # Build a df for the heterogeneous stressor values. Some parameters hand-picked 
 #   with love
 label_df <- unique(datbif_all[ ,c('model', 'type', 'hetero_rank', 'pretty_hetero')])
-label_df[ ,'x'] <- .75
+label_df[ ,'x'] <- .5
 label_df[ ,'y'] <- ifelse(label_df[ ,'type'] == "Mean-field approx.", 
-                          4 - .3 * (as.numeric(label_df[ ,'hetero_rank']) - 1),
-                          1 - .070 * (as.numeric(label_df[ ,'hetero_rank']) - 1))
+                          4 - 0.23 * (as.numeric(label_df[ ,'hetero_rank']) - 1),
+                          1 - .064 * (as.numeric(label_df[ ,'hetero_rank']) - 1))
 
+# Build data frame of trivial eq
+trivial_eqs <- rbind(data.frame(model = 'Grazing model',   type = "Mean-field approx.", homo = c(0, 1),   rhop = c(0, 0), eq_type = 'stable', branch = "trivial", hetero_rank = '1'),
+                     data.frame(model = 'Grazing model',   type = "Mean-field approx.", homo = c(0, 1),   rhop = c(0, 0), eq_type = 'stable', branch = "trivial", hetero_rank = '2'),
+                     data.frame(model = 'Grazing model',   type = "Mean-field approx.", homo = c(0, 1),   rhop = c(0, 0), eq_type = 'stable', branch = "trivial", hetero_rank = '3'), 
+                     data.frame(model = 'Musselbed model', type = "Mean-field approx.", homo = c(0.4, 1), rhop = c(0, 0), eq_type = "stable", branch = "trivial", hetero_rank = '1'), 
+                     data.frame(model = 'Musselbed model', type = "Mean-field approx.", homo = c(0.4, 1), rhop = c(0, 0), eq_type = "stable", branch = "trivial", hetero_rank = '2'), 
+                     data.frame(model = 'Musselbed model', type = "Mean-field approx.", homo = c(0.4, 1), rhop = c(0, 0), eq_type = "stable", branch = "trivial", hetero_rank = '3'))
 
-ggplot(datbif_all) + 
-  geom_line(aes(x = homo, y = rhop, 
-                linetype = eq_type, color = hetero_rank,
-                group = paste(eq_type, branch, hetero_rank))) + 
+datbif_all <- subset(datbif_all, rhop >= 0)
+ggplot() +
+  # Add main lines
+  geom_line(aes(x = homo, y = rhop, linetype = eq_type, color = hetero_rank,
+                group = paste(eq_type, branch, hetero_rank)), 
+            data = datbif_all) + 
+  # Add trivial eqs
+  geom_path(aes(x = homo, y = rhop, linetype = eq_type, color = hetero_rank,
+                 group = paste(eq_type, branch, hetero_rank)), data = trivial_eqs) + 
   geom_text(aes(x = x, y = y, color = hetero_rank, label = pretty_hetero), 
-            hjust = 0, vjust = 1, data = label_df) + 
+            hjust = 1, vjust = 1, data = label_df) + 
   facet_grid(type ~ model, switch = "y", scales = 'free_y') + 
   ylab( expression(rho[symbol("+")]) ) + 
   xlab( "Homogeneous stressor" ) + 
+  coord_cartesian(xlim = c(0, .5)) +
   scale_color_manual(values = c('#34AA35','#C9B217','#E8643A')) +
   theme_ifcam + no_legend
 
